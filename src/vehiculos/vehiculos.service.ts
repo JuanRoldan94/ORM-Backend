@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EstadoOperativo } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ESTADOS_EN_SERVICIO } from '../viajes/estados-viaje.js';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto.js';
@@ -36,6 +37,20 @@ export class VehiculosService {
 
   async update(id: number, dto: UpdateVehiculoDto) {
     await this.findOne(id);
+    if (dto.EstadoOperativo === EstadoOperativo.NoOperativo) {
+      const viajesEnServicio = await this.prisma.viaje.count({
+        where: {
+          IdVehiculo: id,
+          Activo: true,
+          EstadoViaje: { in: ESTADOS_EN_SERVICIO },
+        },
+      });
+      if (viajesEnServicio > 0) {
+        throw new ConflictException(
+          'No se puede marcar como No Operativo un vehículo que está siendo usado en un viaje en curso',
+        );
+      }
+    }
     return this.prisma.vehiculo.update({
       where: { IdVehiculo: id },
       data: dto,

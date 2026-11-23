@@ -96,7 +96,20 @@ export class ChoferesService {
   }
 
   async asignarVehiculo(id: number, dto: AsignarVehiculoDto) {
-    await this.findOne(id);
+    const chofer = await this.findOne(id);
+    const viajesActivos = await this.prisma.viaje.count({
+      where: {
+        IdChofer: id,
+        Activo: true,
+        EstadoViaje: { in: ESTADOS_ACTIVOS },
+      },
+    });
+    if (viajesActivos > 0) {
+      throw new ConflictException(
+        `No se puede cambiar ni desvincular el vehículo del chofer ${chofer.Nombre} ${chofer.Apellido} porque tiene viajes en curso o pendientes asignados`,
+      );
+    }
+
     if (dto.IdVehiculo !== null) {
       const vehiculo = await this.vehiculosService.findOne(dto.IdVehiculo);
       if (vehiculo.EstadoOperativo === EstadoOperativo.NoOperativo) {

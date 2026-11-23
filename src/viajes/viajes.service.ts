@@ -104,9 +104,12 @@ export class ViajesService {
 
   async asignar(id: number, dto: AsignarViajeDto) {
     const viaje = await this.findOne(id);
-    if (viaje.EstadoViaje !== EstadoDeViaje.Pendiente) {
+    if (
+      viaje.EstadoViaje !== EstadoDeViaje.Pendiente &&
+      viaje.EstadoViaje !== EstadoDeViaje.Asignado
+    ) {
       throw new ConflictException(
-        `Solo se pueden asignar viajes en estado Pendiente (estado actual: ${viaje.EstadoViaje})`,
+        `Solo se pueden asignar viajes en estado Pendiente o Asignado (estado actual: ${viaje.EstadoViaje})`,
       );
     }
 
@@ -132,44 +135,70 @@ export class ViajesService {
         `El vehículo ${vehiculo.Patente} asignado al chofer no está Operativo (estado actual: ${vehiculo.EstadoOperativo})`,
       );
     }
-    const vehiculoOcupadoPorOtro = await this.prisma.viaje.findFirst({
-      where: {
-        IdVehiculo: idVehiculo,
-        IdChofer: { not: chofer.IdChofer },
-        Activo: true,
-        EstadoViaje: { in: ESTADOS_EN_SERVICIO },
-      },
-    });
-    if (vehiculoOcupadoPorOtro) {
-      throw new ConflictException(
-        `El vehículo ${vehiculo.Patente} ya está en uso por otro chofer en el viaje ${vehiculoOcupadoPorOtro.IdViaje}`,
-      );
-    }
-
-    const viajesActivosChofer = await this.prisma.viaje.count({
-      where: {
-        IdChofer: chofer.IdChofer,
-        Activo: true,
-        EstadoViaje: { in: ESTADOS_ACTIVOS },
-        IdViaje: { not: id },
-      },
-    });
-
-    const maxViajes = chofer.MaxViajes ?? 1;
-    if (viajesActivosChofer >= maxViajes) {
-      throw new ConflictException(
-        `El chofer ${chofer.Nombre} ${chofer.Apellido} ya alcanzó el límite de viajes simultáneos (${viajesActivosChofer}/${maxViajes})`,
-      );
-    }
-
-    const nuevoEstadoViaje =
-      viajesActivosChofer > 0 ? EstadoDeViaje.Pendiente : EstadoDeViaje.Asignado;
 
     return this.prisma.$transaction(async (tx) => {
+      const vehiculoOcupadoPorOtro = await tx.viaje.findFirst({
+        where: {
+          IdVehiculo: idVehiculo,
+          IdChofer: { not: chofer.IdChofer },
+          Activo: true,
+          EstadoViaje: { in: ESTADOS_EN_SERVICIO },
+          IdViaje: { not: id },
+        },
+      });
+      if (vehiculoOcupadoPorOtro) {
+        throw new ConflictException(
+          `El vehículo ${vehiculo.Patente} ya está en uso por otro chofer en el viaje ${vehiculoOcupadoPorOtro.IdViaje}`,
+        );
+      }
+
+      const viajesActivosChofer = await tx.viaje.count({
+        where: {
+          IdChofer: chofer.IdChofer,
+          Activo: true,
+          EstadoViaje: { in: ESTADOS_ACTIVOS },
+          IdViaje: { not: id },
+        },
+      });
+
+      const maxViajes = chofer.MaxViajes ?? 1;
+      if (viajesActivosChofer >= maxViajes) {
+        throw new ConflictException(
+          `El chofer ${chofer.Nombre} ${chofer.Apellido} ya alcanzó el límite de viajes simultáneos (${viajesActivosChofer}/${maxViajes})`,
+        );
+      }
+
+      // Si el viaje ya tenía otro chofer asignado previamente, verificar si ese chofer anterior queda libre
+      const choferAnteriorId =
+        viaje.IdChofer && viaje.IdChofer !== chofer.IdChofer
+          ? viaje.IdChofer
+          : null;
+
+      if (choferAnteriorId !== null) {
+        const otrosViajesChoferAnterior = await tx.viaje.count({
+          where: {
+            IdChofer: choferAnteriorId,
+            Activo: true,
+            EstadoViaje: { in: ESTADOS_ACTIVOS },
+            IdViaje: { not: id },
+          },
+        });
+        if (otrosViajesChoferAnterior === 0) {
+          await tx.chofer.update({
+            where: { IdChofer: choferAnteriorId },
+            data: { EstadoChofer: EstadoChofer.Libre },
+          });
+        }
+      }
+
+      const nuevoEstadoViaje =
+        viajesActivosChofer > 0 ? EstadoDeViaje.Pendiente : EstadoDeViaje.Asignado;
+
       await tx.chofer.update({
         where: { IdChofer: chofer.IdChofer },
         data: { EstadoChofer: EstadoChofer.EnViaje },
       });
+
       return tx.viaje.update({
         where: { IdViaje: id },
         data: {
@@ -267,9 +296,12 @@ export class ViajesService {
         'Un viaje finalizado no puede eliminarse del historial',
       );
     }
-    const choferALiberar = ESTADOS_EN_SERVICIO.includes(viaje.EstadoViaje)
-      ? viaje.IdChofer
-      : null;
+    const choferALiberar =
+      (ESTADOS_EN_SERVICIO.includes(viaje.EstadoViaje) ||
+        viaje.EstadoViaje === EstadoDeViaje.Pendiente) &&
+      viaje.IdChofer !== null
+        ? viaje.IdChofer
+        : null;
 
     return this.prisma.$transaction(async (tx) => {
       if (choferALiberar !== null) {

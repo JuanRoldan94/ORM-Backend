@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Roles } from '../generated/prisma/enums.js';
 import { hashContrasenia } from '../common/contrasenia.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
@@ -51,7 +56,22 @@ export class UsuariosService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const usuario = await this.findOne(id);
+    if (usuario.Rol === Roles.Duenio || usuario.Rol === Roles.Administrador) {
+      const adminsRestantes = await this.prisma.usuario.count({
+        where: {
+          Activo: true,
+          Rol: { in: [Roles.Duenio, Roles.Administrador] },
+          IdUsuario: { not: id },
+        },
+      });
+      if (adminsRestantes === 0) {
+        throw new ConflictException(
+          'No se puede desactivar al único usuario con rol Dueño o Administrador del sistema',
+        );
+      }
+    }
+
     return this.prisma.usuario.update({
       where: { IdUsuario: id },
       data: { Activo: false },

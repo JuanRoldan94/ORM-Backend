@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoDeViaje {
+  Pendiente             @map("Pendiente")
+  Asignado              @map("Asignado")
+  ChoferEnCamino        @map("Chofer en camino")
+  EnCurso               @map("En curso")
+  ViajeFinalizado       @map("Viaje finalizado")
+  CanceladoPorElCliente @map("Cancelado por el cliente")
+  CanceladoPorElChofer  @map("Cancelado por el chofer")
+}
+
+enum Roles {
+  Duenio                @map("Dueño")
+  Administrador         @map("Administrador")
+  Operador              @map("Operador")
+}
+
+enum EstadoOperativo {
+  Operativo             @map("Operativo")
+  NoOperativo           @map("No operativo")
+}
+
+enum EstadoChofer {
+  EnViaje               @map("En viaje")
+  Libre                 @map("Libre")
+  FueraDeServicio       @map("Fuera de servicio")
+  Vacaciones            @map("Vacaciones")
+}
+
+model Viaje {
+  IdViaje               Int @id @default(autoincrement())
+  DireccionOrigen       String
+  DireccionDestino      String
+  EstadoViaje           EstadoDeViaje @default(Pendiente)
+  Observaciones         String?       @db.Text
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  IdOperador            Int
+  IdCliente             Int
+  IdVehiculo            Int? 
+  IdChofer              Int? 
+
+  Operador              Usuario   @relation(fields: [IdOperador], references: [IdUsuario])
+  Cliente               Cliente   @relation(fields: [IdCliente], references: [IdCliente])
+  Vehiculo              Vehiculo? @relation(fields: [IdVehiculo], references: [IdVehiculo])
+  Chofer                Chofer?   @relation(fields: [IdChofer], references: [IdChofer])
+
+  Extravios Extravio[]
+}
+
+model Usuario {
+  IdUsuario             Int    @id @default(autoincrement())
+  Nombre                String
+  Mail                  String @unique
+  Contrasenia           String
+  Rol                   Roles
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  Viajes                Viaje[]
+}
+
+model Vehiculo {
+  IdVehiculo            Int @id @default(autoincrement())
+  Patente               String @unique
+  Marca                 String
+  Modelo                String
+  EstadoOperativo       EstadoOperativo
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  Viajes                Viaje[]
+  Choferes              Chofer[]
+}
+
+model Chofer {
+  IdChofer              Int @id @default(autoincrement())
+  Nombre                String
+  Apellido              String
+  NumeroLicencia        String @unique
+  Telefono              String
+  EstadoChofer          EstadoChofer
+  IngresoTurno          DateTime
+  FinalizacionTurno     DateTime
+
+  IdVehiculoActual      Int? 
+  MaxViajes             Int @default(1) 
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  VehiculoActual        Vehiculo? @relation(fields: [IdVehiculoActual], references: [IdVehiculo])
+
+  Viajes                Viaje[]
+}
+
+model Cliente {
+  IdCliente             Int    @id @default(autoincrement())
+  Telefono              String
+  ApellidoYNombre       String
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  Viajes                Viaje[]
+  Extravios             Extravio[]
+}
+
+model Extravio {
+  IdExtravio            Int    @id @default(autoincrement())
+  Descripcion           String @db.Text
+
+  IdViaje               Int
+  IdCliente             Int
+
+  Activo                Boolean  @default(true)
+  CreadoEl              DateTime @default(now())
+  UltimaModif           DateTime @updatedAt
+
+  Viaje                 Viaje   @relation(fields: [IdViaje], references: [IdViaje])
+  Cliente               Cliente @relation(fields: [IdCliente], references: [IdCliente])
+}

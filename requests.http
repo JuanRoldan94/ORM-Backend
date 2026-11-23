@@ -1,0 +1,100 @@
+### Pruebas manuales de la API (extensión "REST Client" de VS Code: "Send Request" sobre cada bloque)
+### Están en orden: con la base vacía, los ids que se crean son 1, 2, ...
+
+@api = http://localhost:3000
+
+### ---------- USUARIOS ----------
+POST {{api}}/usuarios
+Content-Type: application/json
+
+{ "Nombre": "Ana Operadora", "Mail": "ana@orm.com", "Contrasenia": "secreta123", "Rol": "Operador" }
+
+###
+GET {{api}}/usuarios
+
+###
+PATCH {{api}}/usuarios/1
+Content-Type: application/json
+
+{ "Nombre": "Ana O." }
+
+### ---------- VEHÍCULOS ----------
+POST {{api}}/vehiculos
+Content-Type: application/json
+
+{ "Patente": "AB123CD", "Marca": "Toyota", "Modelo": "Etios", "EstadoOperativo": "EnServicio" }
+
+###
+GET {{api}}/vehiculos?EstadoOperativo=EnServicio
+
+### ---------- CHOFERES ----------
+POST {{api}}/choferes
+Content-Type: application/json
+
+{
+  "Nombre": "Juan", "Apellido": "Pérez", "NumeroLicencia": "LIC-001", "Telefono": "3415550001",
+  "EstadoChofer": "Libre",
+  "IngresoTurno": "2026-10-21T08:00:00-03:00", "FinalizacionTurno": "2026-10-21T16:00:00-03:00"
+}
+
+### RF-4: asignar vehículo al chofer (con null se le quita)
+PATCH {{api}}/choferes/1/vehiculo
+Content-Type: application/json
+
+{ "IdVehiculo": 1 }
+
+### Choferes disponibles para asignar viajes
+GET {{api}}/choferes?EstadoChofer=Libre
+
+### ---------- CLIENTES ----------
+POST {{api}}/clientes
+Content-Type: application/json
+
+{ "Telefono": "3416667777", "ApellidoYNombre": "García, María" }
+
+### Buscar al cliente que llama
+GET {{api}}/clientes?Telefono=666
+
+### ---------- VIAJES ----------
+### Se crea en estado Pendiente
+POST {{api}}/viajes
+Content-Type: application/json
+
+{ "DireccionOrigen": "Córdoba 1234", "DireccionDestino": "Terminal", "IdCliente": 1, "IdOperador": 1 }
+
+### RF-3: editar (solo en Pendiente)
+PATCH {{api}}/viajes/1
+Content-Type: application/json
+
+{ "Observaciones": "Lleva valija" }
+
+### RF-5: asignar chofer (si no se manda IdVehiculo usa el del chofer)
+PATCH {{api}}/viajes/1/asignar
+Content-Type: application/json
+
+{ "IdChofer": 1 }
+
+### Cambios de estado: ChoferEnCamino -> EnCurso -> ViajeFinalizado
+### (o CanceladoPorElCliente / CanceladoPorElChofer)
+PATCH {{api}}/viajes/1/estado
+Content-Type: application/json
+
+{ "EstadoViaje": "ChoferEnCamino" }
+
+###
+GET {{api}}/viajes?tipo=activos
+
+###
+GET {{api}}/viajes?tipo=historicos
+
+###
+GET {{api}}/viajes/1
+
+### ---------- EXTRAVÍOS ----------
+POST {{api}}/extravios
+Content-Type: application/json
+
+{ "Descripcion": "Paraguas negro", "IdViaje": 1, "IdCliente": 1 }
+
+###
+GET {{api}}/extravios?IdViaje=1

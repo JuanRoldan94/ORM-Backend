@@ -76,8 +76,27 @@ const OBSERVACIONES = [
 ];
 
 async function main() {
+  // Scopes de mantenimiento iniciales
+  const scopesIniciales = [
+    { scope: 'GLOBAL', message: 'Estamos realizando tareas de mantenimiento general en la plataforma.' },
+    { scope: 'VIAJES', message: 'El módulo de Viajes y Operaciones se encuentra en mantenimiento.' },
+    { scope: 'CHOFERES', message: 'El módulo de Choferes se encuentra en mantenimiento.' },
+    { scope: 'VEHICULOS', message: 'El módulo de Vehículos se encuentra en mantenimiento.' },
+    { scope: 'CLIENTES', message: 'El módulo de Clientes se encuentra en mantenimiento.' },
+    { scope: 'EXTRAVIOS', message: 'El módulo de Extravíos se encuentra en mantenimiento.' },
+    { scope: 'USUARIOS', message: 'El módulo de Usuarios se encuentra en mantenimiento.' },
+  ];
+
+  for (const s of scopesIniciales) {
+    await prisma.maintenanceScope.upsert({
+      where: { scope: s.scope },
+      create: { scope: s.scope, isActive: false, message: s.message },
+      update: {},
+    });
+  }
+
   if (await prisma.usuario.findUnique({ where: { Mail: MAIL_CONTROL } })) {
-    console.log('El seed ya estaba cargado: no se agregó nada.');
+    console.log('El seed de usuarios y datos ya estaba cargado. Scopes de mantenimiento asegurados.');
     return;
   }
   const contrasenia = await hashContrasenia(CONTRASENIA_PRUEBA);
@@ -184,12 +203,13 @@ async function main() {
               Nombre,
               Apellido,
               Telefono,
-              NumeroLicencia: `SF-${(30451200 + i * 7919).toString()}`,
+              NumeroLicencia: (30451200 + i * 7919).toString(),
               EstadoChofer: estado,
               IngresoTurno: turnos[turno][0],
               FinalizacionTurno: turnos[turno][1],
               IdVehiculoActual:
                 vehiculo === null ? null : vehiculos[vehiculo].IdVehiculo,
+              MaxViajes: 1,
             },
           }),
         );
@@ -333,16 +353,17 @@ async function main() {
     { timeout: 60_000 },
   );
 
-  const [u, v, c, cl, vj, ex] = await Promise.all([
+  const [u, v, c, cl, vj, ex, sc] = await Promise.all([
     prisma.usuario.count(),
     prisma.vehiculo.count(),
     prisma.chofer.count(),
     prisma.cliente.count(),
     prisma.viaje.count(),
     prisma.extravio.count(),
+    prisma.maintenanceScope.count(),
   ]);
   console.log(
-    `Seed cargado. Totales en la base: ${u} usuarios, ${v} vehículos, ${c} choferes, ${cl} clientes, ${vj} viajes, ${ex} extravíos.`,
+    `Seed cargado. Totales en la base: ${u} usuarios, ${v} vehículos, ${c} choferes, ${cl} clientes, ${vj} viajes, ${ex} extravíos, ${sc} scopes de mantenimiento.`,
   );
 }
 

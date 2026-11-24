@@ -9,11 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { MaintenanceScope } from '../maintenance/maintenance.decorator.js';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto.js';
 import { FiltroVehiculosDto } from './dto/filtro-vehiculos.dto.js';
 import { UpdateVehiculoDto } from './dto/update-vehiculo.dto.js';
 import { VehiculosService } from './vehiculos.service.js';
 
+@MaintenanceScope('VEHICULOS')
 @Controller('vehiculos')
 export class VehiculosController {
   constructor(private readonly vehiculosService: VehiculosService) {}

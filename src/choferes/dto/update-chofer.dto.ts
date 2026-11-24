@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -24,11 +25,17 @@ export class UpdateChoferDto {
   @IsOptional()
   @IsString()
   @MaxLength(191)
+  @Matches(/^[0-9]+$/, {
+    message: 'El número de licencia debe contener solo dígitos numéricos positivos',
+  })
   NumeroLicencia?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(191)
+  @Matches(/^\+?[0-9\s\-()]{6,20}$/, {
+    message: 'El teléfono debe tener un formato válido (entre 6 y 20 caracteres numéricos)',
+  })
   Telefono?: string;
 
   @IsOptional()

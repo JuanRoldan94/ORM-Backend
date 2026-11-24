@@ -9,11 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { MaintenanceScope } from '../maintenance/maintenance.decorator.js';
 import { ClientesService } from './clientes.service.js';
 import { CreateClienteDto } from './dto/create-cliente.dto.js';
 import { FiltroClientesDto } from './dto/filtro-clientes.dto.js';
 import { UpdateClienteDto } from './dto/update-cliente.dto.js';
 
+@MaintenanceScope('CLIENTES')
 @Controller('clientes')
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}

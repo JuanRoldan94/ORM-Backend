@@ -1,0 +1,20 @@
+import { Global, Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { MaintenanceController } from './maintenance.controller.js';
+import { MaintenanceGuard } from './maintenance.guard.js';
+import { MaintenanceService } from './maintenance.service.js';
+
+@Global()
+@Module({
+  controllers: [MaintenanceController],
+  providers: [
+    MaintenanceService,
+    MaintenanceGuard,
+    {
+      provide: APP_GUARD,
+      useClass: MaintenanceGuard,
+    },
+  ],
+  exports: [MaintenanceService, MaintenanceGuard],
+})
+export class MaintenanceModule {}

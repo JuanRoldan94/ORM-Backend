@@ -9,12 +9,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { MaintenanceScope } from '../maintenance/maintenance.decorator.js';
 import { ChoferesService } from './choferes.service.js';
 import { AsignarVehiculoDto } from './dto/asignar-vehiculo.dto.js';
 import { CreateChoferDto } from './dto/create-chofer.dto.js';
 import { FiltroChoferesDto } from './dto/filtro-choferes.dto.js';
 import { UpdateChoferDto } from './dto/update-chofer.dto.js';
 
+@MaintenanceScope('CHOFERES')
 @Controller('choferes')
 export class ChoferesController {
   constructor(private readonly choferesService: ChoferesService) {}

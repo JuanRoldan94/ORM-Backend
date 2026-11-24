@@ -5,6 +5,7 @@ import { AppService } from './app.service.js';
 import { ChoferesModule } from './choferes/choferes.module.js';
 import { ClientesModule } from './clientes/clientes.module.js';
 import { ExtraviosModule } from './extravios/extravios.module.js';
+import { MaintenanceModule } from './maintenance/maintenance.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { VehiculosModule } from './vehiculos/vehiculos.module.js';
@@ -22,6 +23,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       serviceId: 'orm-backend',
     }),
     PrismaModule,
+    MaintenanceModule,
     UsuariosModule,
     VehiculosModule,
     ChoferesModule,

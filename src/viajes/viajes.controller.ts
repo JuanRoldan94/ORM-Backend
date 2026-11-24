@@ -9,6 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { MaintenanceScope } from '../maintenance/maintenance.decorator.js';
 import { AsignarViajeDto } from './dto/asignar-viaje.dto.js';
 import { CambiarEstadoViajeDto } from './dto/cambiar-estado-viaje.dto.js';
 import { CreateViajeDto } from './dto/create-viaje.dto.js';
@@ -16,6 +17,7 @@ import { FiltroViajesDto } from './dto/filtro-viajes.dto.js';
 import { UpdateViajeDto } from './dto/update-viaje.dto.js';
 import { ViajesService } from './viajes.service.js';
 
+@MaintenanceScope('VIAJES')
 @Controller('viajes')
 export class ViajesController {
   constructor(private readonly viajesService: ViajesService) {}

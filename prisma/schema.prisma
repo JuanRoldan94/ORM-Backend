@@ -144,3 +144,12 @@ model Extravio {
   Viaje                 Viaje   @relation(fields: [IdViaje], references: [IdViaje])
   Cliente               Cliente @relation(fields: [IdCliente], references: [IdCliente])
 }
+
+model MaintenanceScope {
+  scope      String   @id @map("scope")
+  isActive   Boolean  @default(false) @map("is_active")
+  message    String   @default("Estamos realizando tareas de mantenimiento.") @map("message")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("maintenance_scopes")
+}

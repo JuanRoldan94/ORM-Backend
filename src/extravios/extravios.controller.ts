@@ -9,11 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { MaintenanceScope } from '../maintenance/maintenance.decorator.js';
 import { CreateExtravioDto } from './dto/create-extravio.dto.js';
 import { FiltroExtraviosDto } from './dto/filtro-extravios.dto.js';
 import { UpdateExtravioDto } from './dto/update-extravio.dto.js';
 import { ExtraviosService } from './extravios.service.js';
 
+@MaintenanceScope('EXTRAVIOS')
 @Controller('extravios')
 export class ExtraviosController {
   constructor(private readonly extraviosService: ExtraviosService) {}
